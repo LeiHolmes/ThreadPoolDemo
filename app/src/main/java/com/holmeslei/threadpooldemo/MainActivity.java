@@ -8,6 +8,7 @@ import android.util.Log;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -22,10 +23,12 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-//        testThreadPoolExecutor();
+        testThreadPoolExecutor();
 //        testFixedThreadPool();
 //        testSingleThreadExecutor();
-        testCachedThreadPool();
+//        testCachedThreadPool();
+//        testScheduledThreadPool();
+//        otherMethod();
     }
 
     /**
@@ -112,11 +115,68 @@ public class MainActivity extends AppCompatActivity {
             Runnable runnable = new Runnable() {
                 @Override
                 public void run() {
+                    SystemClock.sleep(2000);
                     Log.e("testCachedThreadPool", "run：" + Thread.currentThread().getName() + "---" + index);
                 }
             };
             SystemClock.sleep(1000);
             cachedThreadPool.execute(runnable);
         }
+    }
+
+    /**
+     * 一个具有定时定期执行任务功能的线程池
+     * 1. 核心线程数量是固定
+     * 2. 非核心线程是无穷大，闲置时会被立刻回收
+     */
+    private void testScheduledThreadPool() {
+        //延迟启动任务
+        ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(3);
+        Runnable runnable1 = new Runnable() {
+            @Override
+            public void run() {
+                Log.e("testScheduledThreadPool", "隔1秒启动任务：run");
+            }
+        };
+        scheduledExecutorService.schedule(runnable1, 1, TimeUnit.SECONDS);
+
+        //延迟定时执行任务
+        Runnable runnable2 = new Runnable() {
+            @Override
+            public void run() {
+                Log.d("testScheduledThreadPool", "隔1秒后启动任务，之后每隔1秒重复执行：run");
+            }
+        };
+        scheduledExecutorService.scheduleAtFixedRate(runnable2, 1, 1, TimeUnit.SECONDS);
+
+        //延迟执行任务
+        Runnable runnable3 = new Runnable() {
+            @Override
+            public void run() {
+                Log.d("testScheduledThreadPool", "隔1秒后启动任务，之后每次也延迟1秒重复执行：run");
+            }
+        };
+        scheduledExecutorService.scheduleWithFixedDelay(runnable3, 1, 1, TimeUnit.SECONDS);
+    }
+
+    /**
+     * 常用的方法
+     */
+    private void otherMethod() {
+        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(3, 5, 1,
+                TimeUnit.SECONDS, new LinkedBlockingDeque<Runnable>());
+        //关闭线程池，不影响已经提交的任务
+        threadPoolExecutor.shutdown();
+        //关闭线程池，并尝试去终止正在执行的线程
+        threadPoolExecutor.shutdownNow();
+        //允许核心线程闲置超时时被回收
+        threadPoolExecutor.allowCoreThreadTimeOut(true);
+        //一般使用execute提交任务，也可使用submit提交，有返回值
+        Runnable runnable = new Runnable() {
+            @Override
+            public void run() {
+            }
+        };
+        threadPoolExecutor.submit(runnable);
     }
 }
